@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Plus de 80 questions de couple pour redécouvrir votre partenaire — en personne ou à distance, sans inscription.">
+  <title>Notre Cahier de Complicité ❤️ | +100 Questions de Couple</title>
+
+  <!-- Tailwind CSS & Google Fonts -->
+  <script src="https://cdn.tailwindcss.com" crossorigin="anonymous"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
+  <!-- WebRTC P2P (PeerJS) & QR Code -->
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" crossorigin="anonymous"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            cursive: ['"Dancing Script"', 'cursive'],
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          colors: {
+            roseGold: {
+              50: '#fff5f6',
+              100: '#ffe6e9',
+              200: '#fecdd3',
+              300: '#fda4af',
+              400: '#fb7185',
+              500: '#e11d48',
+              600: '#be123c',
+              700: '#881337',
+            },
+            lavender: {
+              50: '#fcf5ff',
+              100: '#f3e8ff',
+              200: '#e9d5ff',
+              500: '#a855f7',
+              700: '#6b21a8'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-gradient-to-br from-rose-100 via-purple-100 to-pink-200 font-sans text-slate-800 min-h-screen flex flex-col justify-between relative overflow-x-hidden antialiased">
+
+  <canvas id="canvasOverlay"></canvas>
+
+  <header class="w-full py-4 px-4 sm:px-8 flex justify-between items-center z-20 max-w-5xl mx-auto">
+    <div class="flex items-center gap-2 cursor-pointer" onclick="switchTab('play')">
+      <div class="w-10 h-10 rounded-2xl bg-white shadow-md flex items-center justify-center text-rose-500 font-bold text-xl">
+        💖
+      </div>
+      <div>
+        <h1 class="font-cursive text-2xl sm:text-3xl text-rose-700 font-bold leading-none">Notre Cahier de Complicité</h1>
+        <p class="text-[10px] sm:text-xs text-purple-700 font-medium">Plus de 100 questions pour vibrer ensemble</p>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <nav class="flex items-center gap-1 sm:gap-2 bg-white/80 p-1.5 rounded-2xl border border-white/60 shadow-sm text-xs font-semibold" role="tablist" aria-label="Navigation principale">
+      <button id="nav-play" onclick="switchTab('play')" class="px-3 py-1.5 rounded-xl transition-all bg-rose-500 text-white shadow" role="tab" aria-selected="true" aria-controls="tab-play" tabindex="0">
+        <i class="fa-solid fa-gamepad mr-1" aria-hidden="true"></i> <span class="hidden sm:inline">Jeu</span>
+      </button>
+      <button id="nav-journal" onclick="switchTab('journal')" class="px-3 py-1.5 rounded-xl transition-all hover:bg-rose-50 text-slate-700" role="tab" aria-selected="false" aria-controls="tab-journal" tabindex="0">
+        <i class="fa-solid fa-book-bookmark mr-1" aria-hidden="true"></i> <span class="hidden sm:inline">Journal</span> (<span id="journalCountBadge">0</span>)
+      </button>
+      <button id="nav-bank" onclick="switchTab('bank')" class="px-3 py-1.5 rounded-xl transition-all hover:bg-rose-50 text-slate-700" role="tab" aria-selected="false" aria-controls="tab-bank" tabindex="0">
+        <i class="fa-solid fa-layer-group mr-1" aria-hidden="true"></i> <span class="hidden sm:inline">Banque</span> (<span id="bankCountBadge">100+</span>)
+      </button>
+    </nav>
+  </header>
+
+  <main class="w-full max-w-3xl mx-auto px-4 py-2 sm:py-6 flex-grow flex items-center justify-center z-20">
+
+    <!-- RESUME BANNER : session mémorisée trouvée -->
+    <div id="resumeBanner" class="hidden mb-3 w-full flex items-center justify-between gap-3 px-4 py-3 rounded-2xl border border-rose-200 bg-white/80 backdrop-blur shadow-sm">
+      <p id="resumeText" class="text-xs text-slate-700"></p>
+      <div class="flex items-center gap-2 shrink-0">
+        <button id="resumeBtn" class="px-3 py-2 bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5">
+          <i class="fa-solid fa-rotate-right"></i> Reprendre
+        </button>
+        <button id="resumeDismissBtn" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-xl transition">
+          Ignorer
+        </button>
+        <button id="resumeCloseBtn" class="hidden px-2 py-2 text-slate-400 hover:text-slate-600 text-xs transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- TAB 1: GAMEPLAY SECTION -->
+    <section id="tab-play" class="tab-panel active w-full" role="tabpanel" aria-labelledby="nav-play" tabindex="0">
+
+      <!-- SETUP CARD (STEP 0) -->
+      <div id="setupCard" class="glass-card rounded-3xl p-6 sm:p-10 shadow-2xl text-center relative overflow-hidden">
+        <div class="inline-block px-3 py-1 bg-rose-100 text-rose-700 text-xs font-bold rounded-full mb-3 uppercase tracking-wider">
+          Aventure Amoureuse ✨
+        </div>
+
+        <h2 class="font-cursive text-4xl sm:text-5xl text-rose-600 font-bold mb-3">Faisons Connaissance & Redécouvrons-nous</h2>
+        <p class="text-slate-600 text-xs sm:text-sm mb-6 leading-relaxed max-w-lg mx-auto">
+          Répondez à tour de rôle à parmi plus de 100 questions. Choisissez parmi les propositions ou entrez vos propres mots personnalisés !
+        </p>
+
+        <!-- Relation Type Selector -->
+        <div class="bg-white/70 rounded-2xl p-4 border border-rose-100 mb-6 text-left">
+          <div class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3"><i class="fa-solid fa-users mr-1 text-rose-500"></i> Type de relation</div>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <button type="button" data-relation="COUPLE" class="relation-btn px-3 py-2 rounded-xl border-2 border-rose-500 bg-rose-50 text-rose-700 text-xs font-bold transition flex items-center justify-center gap-1.5" aria-pressed="true">
+              <i class="fa-solid fa-heart"></i> Couple
+            </button>
+            <button type="button" data-relation="AMIS" class="relation-btn px-3 py-2 rounded-xl border-2 border-slate-200 bg-white text-slate-600 text-xs font-bold hover:border-rose-300 transition flex items-center justify-center gap-1.5" aria-pressed="false">
+              <i class="fa-solid fa-user-group"></i> Amis
+            </button>
+            <button type="button" data-relation="FAMILLE" class="relation-btn px-3 py-2 rounded-xl border-2 border-slate-200 bg-white text-slate-600 text-xs font-bold hover:border-rose-300 transition flex items-center justify-center gap-1.5" aria-pressed="false">
+              <i class="fa-solid fa-house-chimney"></i> Famille
+            </button>
+            <button type="button" data-relation="COLLEGUES" class="relation-btn px-3 py-2 rounded-xl border-2 border-slate-200 bg-white text-slate-600 text-xs font-bold hover:border-rose-300 transition flex items-center justify-center gap-1.5" aria-pressed="false">
+              <i class="fa-solid fa-briefcase"></i> Collègues
+            </button>
+          </div>
+        </div>
+
+        <!-- Player Names Inputs -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 text-left">
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1" id="p1Label">Partenaire A</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-rose-400" id="p1Icon"><i class="fa-solid fa-heart"></i></span>
+              <input type="text" id="p1Name" value="Camille" placeholder="Prénom 1" aria-labelledby="p1Label"
+                class="w-full pl-10 pr-4 py-3 rounded-2xl border border-rose-200 focus:border-rose-500 focus:ring-2 focus:ring-rose-200 outline-none transition bg-white/90 text-sm font-semibold">
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1" id="p2Label">Partenaire B</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-purple-400" id="p2Icon"><i class="fa-solid fa-heart"></i></span>
+              <input type="text" id="p2Name" value="Alex" placeholder="Prénom 2" aria-labelledby="p2Label"
+                class="w-full pl-10 pr-4 py-3 rounded-2xl border border-purple-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition bg-white/90 text-sm font-semibold">
+            </div>
+          </div>
+        </div>
+
+        <!-- Filters Selection -->
+        <div class="bg-white/70 rounded-2xl p-4 border border-rose-100 mb-6 text-left space-y-3">
+          <div class="text-xs font-bold text-slate-700 uppercase tracking-wider"><i class="fa-solid fa-sliders mr-1 text-rose-500"></i> Options de la session</div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div>
+              <label class="block font-semibold text-slate-600 mb-1">Catégorie des questions</label>
+              <select id="categoryFilter" class="w-full p-2.5 rounded-xl border border-rose-200 bg-white font-medium text-slate-700 outline-none">
+                <!-- Options will be populated dynamically based on relation type -->
+              </select>
+            </div>
+
+            <div>
+              <label class="block font-semibold text-slate-600 mb-1">Intensité / Ambiance</label>
+              <select id="intensityFilter" class="w-full p-2.5 rounded-xl border border-rose-200 bg-white font-medium text-slate-700 outline-none">
+                <option value="ALL">Toutes les ambiances</option>
+                <option value="Doux">🌸 Doux & Complices</option>
+                <option value="Profond">🌊 Profond & Sincère</option>
+                <option value="Piquant">🔥 Piquant & Coquin</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="pt-1">
+            <label class="block font-semibold text-slate-600 mb-1"><i class="fa-solid fa-stopwatch text-rose-400 mr-1"></i> Minuteur par question <span class="font-normal text-slate-400">(optionnel)</span></label>
+            <div id="timerChoiceGroup" class="flex flex-wrap gap-2" role="radiogroup" aria-label="Durée par question">
+              <button type="button" data-seconds="0" class="timer-choice px-3 py-1.5 rounded-xl border-2 border-rose-500 bg-rose-50 text-rose-700 text-xs font-bold transition" aria-pressed="true" aria-label="Sans limite de temps">♾️ Sans limite</button>
+              <button type="button" data-seconds="30" class="timer-choice px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-600 text-xs font-bold hover:border-rose-300 transition" aria-pressed="false" aria-label="30 secondes">30 s</button>
+              <button type="button" data-seconds="60" class="timer-choice px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-600 text-xs font-bold hover:border-rose-300 transition" aria-pressed="false" aria-label="1 minute">1 min</button>
+              <button type="button" data-seconds="120" class="timer-choice px-3 py-1.5 rounded-xl border-2 border-slate-200 bg-white text-slate-600 text-xs font-bold hover:border-rose-300 transition" aria-pressed="false" aria-label="2 minutes">2 min</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <button onclick="startGame()"
+            class="w-full bg-white border-2 border-rose-200 hover:border-rose-400 text-rose-600 font-bold py-3.5 px-6 rounded-2xl shadow transition duration-200 transform active:scale-95 flex items-center justify-center gap-2 text-sm">
+            <i class="fa-solid fa-couch"></i> <span>Jouer sur cet appareil</span>
+          </button>
+          <button onclick="createRoom()"
+            class="w-full bg-gradient-to-r from-rose-500 via-pink-500 to-purple-600 hover:from-rose-600 hover:to-purple-700 text-white font-bold py-3.5 px-6 rounded-2xl shadow-lg glow-effect transition duration-200 transform active:scale-95 flex items-center justify-center gap-2 text-sm">
+            <span>Créer et inviter à distance</span>
+            <i class="fa-solid fa-paper-plane"></i>
+          </button>
+        </div>
+        <p class="text-[11px] text-slate-400 mt-3"><i class="fa-solid fa-lock mr-1"></i> Aucun compte, aucun email : juste vos prénoms. La connexion est directe entre vous (chiffrée de bout en bout).</p>
+      </div>
+
+      <!-- HOST ROOM CARD : invitation link -->
+      <div id="hostRoomCard" class="hidden glass-card rounded-3xl p-6 sm:p-10 shadow-2xl text-center">
+        <div class="inline-block px-3 py-1 bg-purple-100 text-purple-700 text-xs font-bold rounded-full mb-3 uppercase tracking-wider">
+          Invitation 💞
+        </div>
+        <h2 class="font-cursive text-3xl sm:text-4xl text-rose-600 font-bold mb-2">Invite <span id="hostPartnerName">ton/ta partenaire</span> à jouer</h2>
+        <p class="text-slate-600 text-xs sm:text-sm mb-5">Envoie ce lien : il ou elle met juste son prénom, <strong>aucune inscription</strong>, et vous serez connectés en direct.</p>
+
+        <div class="bg-white/80 rounded-2xl p-3 border border-rose-100 mb-3 text-left">
+          <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Code de session</div>
+          <div class="flex items-center justify-between gap-2">
+            <span id="roomCodeDisplay" class="font-mono text-lg font-extrabold tracking-[0.2em] text-rose-600 select-all">·····</span>
+            <span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded-full uppercase">Session temporaire</span>
+          </div>
+        </div>
+
+        <div class="bg-white/80 rounded-2xl p-3 border border-rose-100 mb-4 text-left">
+          <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Lien d'invitation</div>
+          <div id="inviteLinkDisplay" class="text-xs font-mono text-slate-700 break-all select-all mb-2">…</div>
+          <div class="grid grid-cols-2 gap-2">
+            <button onclick="copyInviteLink()" class="px-3 py-2.5 bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-copy"></i> Copier le lien
+            </button>
+            <a id="whatsappShareBtn" href="#" target="_blank" rel="noopener" class="px-3 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 no-underline">
+              <i class="fa-brands fa-whatsapp"></i> WhatsApp
+            </a>
+          </div>
+        </div>
+
+        <div id="qrCodeBox" class="inline-block bg-white p-3 rounded-2xl border border-rose-100 shadow-sm mb-4"></div>
+
+        <div class="flex items-center justify-center gap-2 text-xs font-semibold text-slate-500">
+          <span class="relative flex h-2.5 w-2.5">
+            <span id="waitingDot" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+            <span id="waitingDotCore" class="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
+          </span>
+          <span id="waitingText">En attente de son arrivée…</span>
+        </div>
+      </div>
+
+      <!-- JOIN CARD : prenom only (opened via invitation link) -->
+      <div id="joinNameCard" class="hidden glass-card rounded-3xl p-6 sm:p-10 shadow-2xl text-center">
+        <div class="w-14 h-14 mx-auto rounded-2xl bg-white shadow-md flex items-center justify-center text-rose-500 text-2xl mb-3">💌</div>
+        <h2 class="font-cursive text-3xl sm:text-4xl text-rose-600 font-bold mb-2">Tu es invité(e) !</h2>
+        <p class="text-slate-600 text-xs sm:text-sm mb-6"><span id="joinHostPreview">Quelqu'un</span> t'invite à jouer au Cahier de Complicité.<br>Dis-nous juste ton prénom — <strong>aucune inscription</strong>.</p>
+        <input type="text" id="joinNameInput" placeholder="Ton prénom" maxlength="30" aria-label="Votre prénom pour rejoindre la session"
+          class="w-full max-w-xs mx-auto block text-center px-4 py-3.5 rounded-2xl border-2 border-rose-200 focus:border-rose-500 focus:ring-2 focus:ring-rose-200 outline-none transition bg-white/90 text-base font-semibold mb-4">
+        <button onclick="joinRoom()"
+          class="w-full max-w-xs mx-auto bg-gradient-to-r from-rose-500 via-pink-500 to-purple-600 hover:from-rose-600 hover:to-purple-700 text-white font-bold py-4 px-6 rounded-2xl shadow-lg glow-effect transition duration-200 transform active:scale-95 flex items-center justify-center gap-2 text-base">
+          <span>Rejoindre la partie</span> <i class="fa-solid fa-heart"></i>
+        </button>
+        <p id="joinError" class="hidden text-xs text-rose-600 font-bold mt-3"></p>
+      </div>
+
+      <!-- CONNECTING CARD -->
+      <div id="connectingCard" class="hidden glass-card rounded-3xl p-10 shadow-2xl text-center">
+        <i class="fa-solid fa-heart-pulse text-4xl text-rose-500 animate-bounce mb-4"></i>
+        <h2 class="font-cursive text-3xl text-rose-600 font-bold mb-2">Connexion en cours…</h2>
+        <p id="connectingText" class="text-xs text-slate-500">On établit le lien magique entre vous 💫</p>
+      </div>
+
+      <!-- ACTIVE QUESTION CARD -->
+      <div id="questionCard" class="hidden glass-card rounded-3xl p-5 sm:p-8 shadow-2xl relative">
+
+        <!-- Top Status Bar -->
+        <div class="flex justify-between items-center mb-4 pb-3 border-b border-rose-100">
+          <div class="flex items-center gap-2">
+            <span id="qCategoryBadge" class="px-2.5 py-1 bg-rose-100 text-rose-700 text-[11px] font-bold rounded-full uppercase">Catégorie</span>
+            <span id="qIntensityBadge" class="px-2.5 py-1 bg-purple-100 text-purple-700 text-[11px] font-bold rounded-full uppercase">🌸 Doux</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <div id="partnerPill" class="hidden flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] font-bold transition-all duration-300" role="status" aria-live="polite">
+              <span id="partnerPillDot" class="w-2 h-2 rounded-full bg-slate-300 transition-colors duration-300"></span>
+              <span id="partnerPillLabel" class="uppercase tracking-wide">…</span>
+            </div>
+            <span id="syncBadge" class="hidden px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded-full uppercase"><i class="fa-solid fa-bolt mr-0.5"></i> En ligne</span>
+            <div id="timerRingWrap" class="hidden relative w-8 h-8" title="Temps restant">
+              <svg class="w-8 h-8 -rotate-90" viewBox="0 0 36 36" aria-hidden="true">
+                <circle cx="18" cy="18" r="15.5" fill="none" stroke="#fce7f3" stroke-width="4"></circle>
+                <circle id="timerRing" cx="18" cy="18" r="15.5" fill="none" stroke="#e11d48" stroke-width="4"
+                  stroke-linecap="round" stroke-dasharray="97.39" stroke-dashoffset="0"></circle>
+              </svg>
+              <span id="timerRingText" class="absolute inset-0 flex items-center justify-center text-[9px] font-extrabold text-rose-700">30</span>
+            </div>
+            <span id="qProgressText" class="text-xs font-bold text-slate-500">Question 1 / 100</span>
+          </div>
+        </div>
+
+        <!-- Player Turn Indication -->
+        <div class="bg-gradient-to-r from-rose-50 to-purple-50 rounded-2xl p-3 mb-5 border border-rose-100 flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <div id="playerTurnAvatar" class="w-9 h-9 rounded-full bg-rose-500 text-white flex items-center justify-center font-bold text-sm shadow">
+              A
+            </div>
+            <div>
+              <div id="turnLabel" class="text-[10px] font-bold uppercase tracking-wider text-slate-400">C'est au tour de</div>
+              <div id="playerTurnName" class="text-sm font-extrabold text-slate-800">Camille</div>
+            </div>
+          </div>
+          <button id="passTurnBtn" onclick="switchPlayerTurn()" class="text-xs text-rose-600 hover:underline font-semibold flex items-center gap-1">
+            <i class="fa-solid fa-arrows-rotate"></i> Passer le tour
+          </button>
+        </div>
+
+        <!-- Question Prompt -->
+        <h3 id="questionText" class="text-lg sm:text-xl font-bold text-slate-800 mb-5 leading-snug">
+          Quelle est la première impression que j'ai eue lors de notre toute première rencontre ?
+        </h3>
+
+        <!-- Choices List (Hybrid System) -->
+        <div id="choicesContainer" class="space-y-2.5 mb-5">
+          <!-- Dynamically populated choices -->
+        </div>
+
+        <!-- Custom Input Field Container -->
+        <div id="customInputContainer" class="hidden mb-5 bg-white p-3.5 rounded-2xl border-2 border-rose-400 shadow-sm">
+          <label class="block text-xs font-bold text-rose-600 mb-1">✍️ Votre réponse personnalisée :</label>
+          <textarea id="customAnswerInput" rows="2" placeholder="Écrivez librement vos mots ici..."
+            class="w-full p-2 text-xs sm:text-sm border-none outline-none focus:ring-0 text-slate-800 bg-transparent resize-none"></textarea>
+        </div>
+
+        <!-- Reactions en direct (mode en ligne uniquement) -->
+        <div id="reactionBar" class="hidden mb-4 flex items-center gap-2">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mr-1">Réagir</span>
+          <button type="button" class="reaction-btn w-10 h-10 rounded-full bg-white border border-rose-100 shadow-sm text-lg transition transform hover:scale-110 hover:border-rose-300 active:scale-95" data-reaction="heart" title="Envoyer un cœur">❤️</button>
+          <button type="button" class="reaction-btn w-10 h-10 rounded-full bg-white border border-rose-100 shadow-sm text-lg transition transform hover:scale-110 hover:border-rose-300 active:scale-95" data-reaction="laugh" title="Envoyer un fou rire">😂</button>
+          <button type="button" class="reaction-btn w-10 h-10 rounded-full bg-white border border-rose-100 shadow-sm text-lg transition transform hover:scale-110 hover:border-rose-300 active:scale-95" data-reaction="fire" title="Envoyer une flamme">🔥</button>
+        </div>
+
+        <!-- Remote partner answer (online reveal) -->
+        <div id="remoteAnswerCard" class="hidden mb-5 bg-gradient-to-r from-purple-50 to-rose-50 rounded-2xl p-4 border border-purple-100">
+          <div class="flex items-center gap-2.5 mb-2">
+            <div id="remoteAvatar" class="w-8 h-8 rounded-full bg-purple-600 text-white flex items-center justify-center font-bold text-xs shadow">?</div>
+            <div class="text-left">
+              <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">A répondu</div>
+              <div id="remoteAnswerName" class="text-sm font-extrabold text-slate-800">…</div>
+            </div>
+          </div>
+          <p id="sealedHint" class="text-xs text-slate-500 mb-3 text-left"><i class="fa-solid fa-lock text-purple-400 mr-1"></i> Sa réponse est scellée jusqu'à ce que vous la révéliez tous les deux.</p>
+          <p id="remoteAnswerText" class="hidden text-sm font-semibold text-purple-900 bg-white/80 rounded-xl p-3 text-left mb-3 leading-relaxed"></p>
+          <button id="revealBtn" onclick="revealRemoteAnswer()" disabled
+            class="w-full bg-purple-600 disabled:bg-slate-300 disabled:text-slate-50 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-2xl transition duration-200 flex items-center justify-center gap-2 text-sm">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> <span id="revealBtnText">Révéler la réponse</span>
+          </button>
+        </div>
+
+        <!-- Next / Validate Button -->
+        <button id="validateBtn" onclick="submitAnswer()" disabled
+          class="w-full bg-slate-300 text-slate-50 font-bold py-3.5 px-6 rounded-2xl cursor-not-allowed transition duration-200 flex items-center justify-center gap-2">
+          <span>Enregistrer ma réponse</span>
+          <i class="fa-solid fa-check-circle"></i>
+        </button>
+
+      </div>
+
+    </section>
+
+    <!-- TAB 2: JOURNAL / RECAP SECTION -->
+    <section id="tab-journal" class="tab-panel w-full" role="tabpanel" aria-labelledby="nav-journal" tabindex="0">
+      <div class="glass-card rounded-3xl p-5 sm:p-8 shadow-2xl">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 border-b border-rose-100 pb-4">
+          <div>
+            <h2 class="font-cursive text-3xl text-rose-700 font-bold">Notre Cahier de Complicité</h2>
+            <p class="text-xs text-slate-500">Historique de vos partages et confidences échangées</p>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button onclick="exportJournalJSON()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition">
+              <i class="fa-solid fa-download mr-1"></i> Exporter
+            </button>
+            <button onclick="clearJournal()" class="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold rounded-xl transition">
+              <i class="fa-solid fa-trash mr-1"></i> Effacer
+            </button>
+          </div>
+        </div>
+
+        <!-- Search Bar in Journal -->
+        <div class="relative mb-4">
+          <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400"><i class="fa-solid fa-magnifying-glass"></i></span>
+          <input type="text" id="journalSearchInput" onkeyup="filterJournal()" placeholder="Rechercher un mot, une question, un prénom..."
+            class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-rose-100 text-xs sm:text-sm outline-none focus:border-rose-400 bg-white">
+        </div>
+
+        <!-- Journal Entries List -->
+        <div id="journalEntriesContainer" class="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: QUESTION BANK MANAGER -->
+    <section id="tab-bank" class="tab-panel w-full" role="tabpanel" aria-labelledby="nav-bank" tabindex="0">
+      <div class="glass-card rounded-3xl p-5 sm:p-8 shadow-2xl">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 border-b border-rose-100 pb-4">
+          <div>
+            <h2 class="font-cursive text-3xl text-purple-700 font-bold">Banque de Questions</h2>
+            <p class="text-xs text-slate-500">Explorez et ajoutez de nouvelles questions sur mesure</p>
+          </div>
+
+          <button onclick="openAddQuestionModal()" class="px-4 py-2.5 bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold rounded-xl shadow transition flex items-center gap-1.5">
+            <i class="fa-solid fa-plus"></i> Ajouter une question
+          </button>
+        </div>
+
+        <!-- Bank Filters -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+          <input type="text" id="bankSearchInput" onkeyup="filterBank()" placeholder="Chercher une question..."
+            class="px-3.5 py-2 rounded-xl border border-purple-100 text-xs outline-none focus:border-purple-400 bg-white">
+
+          <select id="bankCategoryFilter" onchange="filterBank()" class="px-3.5 py-2 rounded-xl border border-purple-100 text-xs outline-none bg-white font-medium">
+            <!-- Options will be populated dynamically based on relation type -->
+          </select>
+        </div>
+
+        <!-- Bank Questions List -->
+        <div id="bankContainer" class="space-y-2.5 max-h-[55vh] overflow-y-auto pr-1">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ADD QUESTION MODAL -->
+  <div id="addQuestionModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="glass-card bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-rose-100 max-h-[90vh] overflow-y-auto">
+      <h3 class="font-bold text-lg text-slate-800 mb-3 flex items-center gap-2">
+        <span class="text-rose-500">✍️</span> Ajouter une Question
+      </h3>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block font-bold text-slate-600 mb-1">Intitulé de la question</label>
+          <input type="text" id="newQText" placeholder="Ex: Quel est notre plus beau fou rire ?" class="w-full p-2.5 rounded-xl border border-rose-200 outline-none">
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block font-bold text-slate-600 mb-1">Catégorie</label>
+            <select id="newQCat" class="w-full p-2 rounded-xl border border-rose-200 bg-white">
+              <option value="SOUVENIRS">Souvenirs & Débuts</option>
+              <option value="GOUTS">Goûts & Habitudes</option>
+              <option value="PROJETS">Projets & Avenir</option>
+              <option value="EMOTIONS">Amour & Intimité</option>
+              <option value="ANECDOTES">Anecdotes & Humour</option>
+              <option value="DILEMMES">Dilemmes</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-slate-600 mb-1">Intensité</label>
+            <select id="newQInt" class="w-full p-2 rounded-xl border border-rose-200 bg-white">
+              <option value="Doux">🌸 Doux</option>
+              <option value="Profond">🌊 Profond</option>
+              <option value="Piquant">🔥 Piquant</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-600 mb-1">Propositions de choix (4 choix)</label>
+          <input type="text" id="newOpt0" placeholder="Option 1" class="w-full p-2 rounded-xl border border-slate-200 mb-1.5">
+          <input type="text" id="newOpt1" placeholder="Option 2" class="w-full p-2 rounded-xl border border-slate-200 mb-1.5">
+          <input type="text" id="newOpt2" placeholder="Option 3" class="w-full p-2 rounded-xl border border-slate-200 mb-1.5">
+          <input type="text" id="newOpt3" placeholder="Option 4" class="w-full p-2 rounded-xl border border-slate-200">
+        </div>
+      </div>
+
+      <div class="mt-5 flex justify-end gap-2 text-xs">
+        <button onclick="closeAddQuestionModal()" class="px-4 py-2 rounded-xl bg-slate-100 text-slate-600 font-bold">Annuler</button>
+        <button onclick="saveNewQuestion()" class="px-4 py-2 rounded-xl bg-rose-500 text-white font-bold shadow">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- WAITING FOR PARTNER MODAL -->
+  <div id="waitingPartnerModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="glass-card bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl text-center">
+      <i class="fa-solid fa-hourglass-half text-3xl text-rose-500 animate-bounce mb-3"></i>
+      <h3 class="font-bold text-lg text-slate-800 mb-1">Réponse envoyée 💌</h3>
+      <p class="text-xs text-slate-500 mb-1">En attente de <span id="waitingPartnerName" class="font-bold text-rose-600">…</span></p>
+      <p class="text-[11px] text-slate-400">La révélation se fera quand vous aurez répondu tous les deux.</p>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="w-full py-3 px-6 text-center text-xs text-slate-500 z-20">
+    <span>Notre Cahier de Complicité ❤️ | Créé pour partager des moments uniques</span>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

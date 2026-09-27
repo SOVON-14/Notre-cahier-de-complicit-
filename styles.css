@@ -1,0 +1,296 @@
+/* ============================================================
+   NOTRE CAHIER DE COMPLICITÉ — Feuille de style
+   ============================================================ */
+
+#canvasOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 40;
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.90);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+}
+
+.glass-card-dark {
+  background: rgba(30, 27, 38, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.glow-effect {
+  box-shadow: 0 0 25px rgba(225, 29, 72, 0.25);
+}
+
+.tab-panel {
+  display: none;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: all 0.3s ease-in-out;
+}
+
+.tab-panel.active {
+  display: block;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ============================================================
+   RESPONSIVE DESIGN - Mobile First
+   ============================================================ */
+
+/* Mobile (< 640px) */
+@media (max-width: 639px) {
+  /* Header compact sur mobile */
+  header {
+    padding: 0.5rem 1rem;
+  }
+  
+  header h1 {
+    font-size: 1.25rem;
+  }
+  
+  header p {
+    font-size: 0.65rem;
+  }
+  
+  /* Navigation tabs optimisées */
+  nav {
+    padding: 0.5rem;
+    gap: 0.25rem;
+  }
+  
+  nav button {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.7rem;
+  }
+  
+  /* Cartes glass-card avec padding réduit */
+  .glass-card {
+    padding: 1rem;
+    border-radius: 1rem;
+  }
+  
+  /* Questions texte taille ajustée */
+  #questionText {
+    font-size: 1rem;
+    line-height: 1.4;
+  }
+  
+  /* Boutons de choix adaptés */
+  .choice-btn {
+    padding: 0.75rem;
+    font-size: 0.8rem;
+  }
+  
+  /* Input custom réponse */
+  #customAnswerInput {
+    font-size: 0.8rem;
+  }
+  
+  /* Timer ring plus petit */
+  #timerRingWrap {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+  
+  #timerRingText {
+    font-size: 0.6rem;
+  }
+  
+  /* Badges réduits */
+  .px-2\.5 {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+  
+  /* Modal d'ajout de question responsive */
+  #addQuestionModal .glass-card {
+    max-height: 85vh;
+    padding: 1rem;
+  }
+  
+  /* Inputs modales */
+  #addQuestionModal input,
+  #addQuestionModal select {
+    font-size: 1rem; /* Prevent zoom on iOS */
+  }
+}
+
+/* Petit mobile (< 375px) */
+@media (max-width: 374px) {
+  header h1 {
+    font-size: 1rem;
+  }
+  
+  nav button {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.65rem;
+  }
+  
+  #questionText {
+    font-size: 0.9rem;
+  }
+  
+  .choice-btn {
+    padding: 0.6rem;
+    font-size: 0.75rem;
+  }
+}
+
+/* Tablet et desktop (> 640px) */
+@media (min-width: 640px) {
+  /* Styles déjà définis dans Tailwind, rien à ajouter */
+}
+
+/* Prévention du zoom sur iOS pour les inputs */
+input[type="text"],
+input[type="number"],
+textarea,
+select {
+  font-size: 16px;
+}
+
+/* Optimisation du touch sur mobile */
+@media (hover: none) and (pointer: coarse) {
+  .choice-btn,
+  button,
+  .reaction-btn {
+    min-height: 44px; /* Taille minimale pour le touch */
+    min-width: 44px;
+  }
+  
+  .choice-btn:active,
+  button:active {
+    transform: scale(0.95);
+  }
+}
+
+/* Orientation landscape sur mobile */
+@media (max-width: 639px) and (orientation: landscape) {
+  header {
+    padding: 0.25rem 0.5rem;
+  }
+  
+  header h1 {
+    font-size: 1rem;
+  }
+  
+  .glass-card {
+    padding: 0.75rem;
+  }
+  
+  #questionText {
+    font-size: 0.9rem;
+  }
+  
+  .choice-btn {
+    padding: 0.5rem;
+    font-size: 0.75rem;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(243, 232, 255, 0.5);
+}
+::-webkit-scrollbar-thumb {
+  background: #fda4af;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #e11d48;
+}
+
+/* Attente : pulsation douce du QR / carte d'invitation */
+.pulsar {
+  animation: pulsar 2s ease-in-out infinite;
+}
+@keyframes pulsar {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(225, 29, 72, 0.15); }
+  50% { transform: scale(1.03); box-shadow: 0 0 24px 4px rgba(225, 29, 72, 0.18); }
+}
+
+/* Secousse d'erreur (formulaire d'invitation) */
+.shake {
+  animation: shake 0.4s ease-in-out;
+}
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  50% { transform: translateX(6px); }
+  75% { transform: translateX(-4px); }
+}
+
+/* ============================================================
+   MINUTEUR PAR QUESTION
+   ============================================================ */
+
+/* Transitions fluides de l'anneau de progression SVG */
+#timerRing {
+  transition: stroke-dashoffset 0.95s linear, stroke 0.4s ease;
+}
+
+/* Dernières secondes : l'anneau pulse */
+#timerRingWrap.timer-critical #timerRing {
+  animation: timerPulse 0.8s ease-in-out infinite;
+}
+@keyframes timerPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+#timerRingWrap.timer-critical #timerRingText {
+  color: #be123c;
+}
+
+/* Boutons de choix du minuteur (setup) */
+.timer-choice.selected {
+  border-color: #e11d48;
+  background: #fff1f2;
+  color: #9f1239;
+}
+.timer-choice:not(.selected):hover {
+  border-color: #fda4af;
+}
+
+/* ============================================================
+   RÉACTIONS EN DIRECT — émojis flottants
+   ============================================================ */
+
+/* Un émoji qui traverse l'écran depuis le bas */
+.floating-emoji {
+  position: fixed;
+  bottom: -60px;
+  z-index: 45;
+  pointer-events: none;
+  user-select: none;
+  will-change: transform, opacity;
+  animation: emojiFloat 3.2s ease-out forwards;
+}
+@keyframes emojiFloat {
+  0%   { transform: translateY(0) rotate(0deg) scale(0.7); opacity: 0; }
+  10%  { opacity: 1; }
+  50%  { transform: translateY(-45vh) rotate(12deg) scale(1.25); }
+  100% { transform: translateY(-85vh) rotate(-10deg) scale(0.9); opacity: 0; }
+}
+
+/* Petit rebond du bouton quand on clique dessus */
+.reaction-btn.sent {
+  animation: reactionBounce 0.45s ease;
+}
+@keyframes reactionBounce {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.35) rotate(-8deg); }
+  100% { transform: scale(1); }
+}
