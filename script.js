@@ -926,6 +926,46 @@ function initApp() {
 let peer = null; // signalisation (broker public PeerJS)
 let conn = null; // canal de données direct avec le/la partenaire
 
+// Serveurs ICE : plusieurs STUN publics pour maximiser les traversées NAT
+// (un seul STUN = parfois 20-60 s de négociation, ou un échec selon le réseau)
+const PEER_CONFIG = {
+  debug: 1,
+  config: {
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:global.stun.twilio.com:3478' },
+      { urls: 'stun:stun.cloudflare.com:3478' },
+      { urls: 'stun:stun.nextcloud.com:443' }
+    ],
+    iceCandidatePoolSize: 4
+  }
+};
+
+// Watchdog anti-blocage : si l'écran « Connexion en cours… » est toujours affiché
+// après un délai raisonnable, on prévient au lieu de laisser tourner indéfiniment.
+let connWatchdog = null;
+function startConnWatchdog(kind = 'invite') {
+  stopConnWatchdog();
+  connWatchdog = setTimeout(() => {
+    connWatchdog = null;
+    if (conn && conn.open) return; // connecté entre-temps
+    qs('connectingCard').classList.add('hidden');
+    // On arrête net la tentative fantôme (sinon elle peut aboutir des minutes plus tard)
+    try { if (peer) peer.destroy(); } catch (e) {}
+    peer = null; conn = null;
+    if (kind === 'resume') {
+      showResumeError("Toujours pas connecté après 45 s. Vérifie que l'hôte a bien " +
+        "son onglet ouvert, puis réessaie 💗");
+    } else {
+      showJoinError("Connexion trop longue ou impossible. Vérifie que ton/ta partenaire " +
+        "a toujours son onglet ouvert (écran d'invitation), puis réessaie 💗");
+    }
+  }, 45000);
+}
+function stopConnWatchdog() {
+  if (connWatchdog) { clearTimeout(connWatchdog); connWatchdog = null; }
+}
+
 function makeRoomCode() {
   const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code = '';
@@ -972,7 +1012,7 @@ function createRoom() {
 }
 
 function startHost() {
-  peer = new Peer(`cc-${roomCode}`, { debug: 1 });
+  peer = new Peer(`cc-${roomCode}`, PEER_CONFIG);
 
   peer.on('open', () => {
     qs('waitingText').innerText = 'Session active — en attente de ton/ta partenaire…';
@@ -994,7 +1034,7 @@ function startHost() {
   });
 }
 
-function handlePeerError(err, context) {
+function handlePeerError(err, context, opts = {}) {
   console.error('PeerJS Error:', err);
   
   const errorMessages = {
@@ -1039,12 +1079,17 @@ function handlePeerError(err, context) {
     }
   } else {
     // Afficher l'erreur à l'utilisateur
+    stopConnWatchdog();
+    if (opts.suppressUI) return; // l'appelant gère lui-même l'affichage (reconnexion)
     if (context === 'host') {
       qs('waitingText').innerText = userMessage;
       qs('waitingDot').classList.remove('animate-ping');
       qs('waitingDotCore').classList.remove('bg-rose-500');
       qs('waitingDotCore').classList.add('bg-amber-500');
     } else {
+      // Invité : si l'écran « Connexion en cours… » est bloqué, on le ferme et
+      // on ré-affiche le formulaire de prénom avec le message d'erreur.
+      qs('connectingCard').classList.add('hidden');
       showJoinError(userMessage);
     }
   }
@@ -1079,11 +1124,12 @@ function joinRoom() {
 
   qs('joinNameCard').classList.add('hidden');
   qs('connectingCard').classList.remove('hidden');
-  qs('connectingText').innerText = `On rejoint la session ${code}…`;
+  qs('connectingText').innerText = `On rejoint la session ${roomCode}…`;
 
-  peer = new Peer(null, { debug: 1 });
+  peer = new Peer(null, PEER_CONFIG);
   peer.on('open', () => {
-    conn = peer.connect(`cc-${code}`, { reliable: true });
+    conn = peer.connect(`cc-${roomCode}`, { reliable: true });
+    startConnWatchdog('invite'); // l'invité ne doit pas rester bloqué sur « Connexion… »
     bindConn(conn);
   });
   peer.on('error', (err) => {
@@ -1095,6 +1141,7 @@ function showJoinError(msg) {
   const el = qs('joinError');
   el.innerText = msg;
   el.classList.remove('hidden');
+  if (onlineMode) qs('joinNameCard').classList.remove('hidden'); // garantir que le formulaire est visible
   const card = qs('joinNameCard');
   card.classList.remove('shake');
   void card.offsetWidth;
@@ -1150,7 +1197,7 @@ function reconnectSession() {
 
   if (iAmHost) {
     // L'hôte RÉ-ENREGISTRE le même code de room (les invités s'y connectent)
-    peer = new Peer(`cc-${roomCode}`, { debug: 1 });
+    peer = new Peer(`cc-${roomCode}`, PEER_CONFIG);
     peer.on('connection', (incoming) => {
       if (conn && conn.open) {
         incoming.on('open', () => incoming.send({ t: 'busy' }));
@@ -1164,19 +1211,20 @@ function reconnectSession() {
       qs('connectingText').innerText = `Session ${roomCode} prête — en attente de ${partnerFirstName() || 'ton/ta partenaire'}…`;
     });
     peer.on('error', (err) => {
-      handlePeerError(err, 'host');
+      handlePeerError(err, 'host', { suppressUI: true });
       qs('connectingCard').classList.add('hidden');
       showResumeError('Impossible de recréer la session. Réessaie dans un instant 💗');
     });
   } else {
     // L'invité se reconnecte à la room de l'hôte
-    peer = new Peer(null, { debug: 1 });
+    peer = new Peer(null, PEER_CONFIG);
     peer.on('open', () => {
       conn = peer.connect(`cc-${roomCode}`, { reliable: true });
+      startConnWatchdog('resume');
       bindConn(conn);
     });
     peer.on('error', (err) => {
-      handlePeerError(err, 'guest');
+      handlePeerError(err, 'guest', { suppressUI: true });
       qs('connectingCard').classList.add('hidden');
       // On garde la session mémorisée : l'hôte reviendra peut-être,
       // un rechargement de page ré-affichera le bandeau.
@@ -1200,6 +1248,7 @@ function showResumeError(msg) {
 
 function bindConn(c) {
   c.on('open', () => {
+    stopConnWatchdog(); // connecté → plus besoin du watchdog
     if (!iAmHost) {
       // L'invité annonce s'il REVIENT (session en cours) ou s'il arrive neuf
       const resuming = loadSessionState() && loadSessionState().code === roomCode && activeSessionQuestions.length > 0;
@@ -1401,6 +1450,7 @@ function handlePeerData(msg) {
     }
 
     case 'busy': {
+      stopConnWatchdog();
       qs('connectingCard').classList.add('hidden');
       showJoinError('Cette session a déjà 2 joueurs. Demande un nouveau lien 💗');
       try { if (peer) peer.destroy(); } catch (e) {}
